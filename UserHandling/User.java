@@ -1,4 +1,4 @@
-package Client;
+package Client.UserHandling;
 
 import java.io.Serializable;
 import java.math.BigInteger;

@@ -1,4 +1,4 @@
-package Client;
+package Client.Protocol;
 
 import java.io.Serializable;
 

@@ -1,6 +1,8 @@
-package Client;
+package Client.Protocol;
 
 import java.io.Serializable;
+
+import Client.UserHandling.ChatSession;
 
 public class ChatMessage implements Serializable {
 	/**

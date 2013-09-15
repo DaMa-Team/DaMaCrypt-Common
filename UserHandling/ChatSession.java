@@ -1,8 +1,10 @@
-package Client;
+package Client.UserHandling;
 
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Random;
+
+import Client.Protocol.ChatSessionUser;
 
 public class ChatSession implements Serializable {
 

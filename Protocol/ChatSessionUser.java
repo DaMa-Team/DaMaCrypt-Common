@@ -1,6 +1,8 @@
-package Client;
+package Client.Protocol;
 
 import java.math.BigInteger;
+
+import Client.UserHandling.User;
 
 public class ChatSessionUser {
 	private User user;
