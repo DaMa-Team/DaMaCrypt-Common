@@ -5,7 +5,6 @@ public class Chatopen {
 
 	public Chatopen(int chatpartner) {
 		this.chatpartner = chatpartner;
-		System.out.println("Your Partner is" + chatpartner);
 	}
 
 	public int getChatpartner() {
