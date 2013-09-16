@@ -11,8 +11,9 @@ import Client.Protocol.Types.ChatKeyOffer;
 import Client.Protocol.Types.Chatopen;
 import Client.Protocol.Types.Message;
 import Client.Protocol.Types.Namerequest;
+import Client.Protocol.Types.OnlineList;
+import Client.UserHandling.ChatSession;
 import Client.UserHandling.User;
-import Clienthandling.ClientHandling;
 
 public class Protocol {
 	public static final byte CMD_REGISTER = 0;
@@ -51,6 +52,37 @@ public class Protocol {
 		releaseWritelock();
 	}
 
+	public int applyForID() throws IOException {
+		// Get the ID
+		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
+		out.writeByte(Protocol.CMD_REGISTER);
+		out.writeByte(Protocol.DACRY_SERVER_COMM_CLOSE);
+		out.flush();
+		// openingbyte
+		in.readByte();
+		int id = (int) in.readLong();
+		in.readByte();
+		return id;
+	}
+
+	public void writeOnlineListApply() throws IOException {
+		appendWritelock();
+		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
+		out.writeByte(Protocol.CMD_GET_ONLINE_USERS);
+		out.writeByte(Protocol.DACRY_SERVER_COMM_CLOSE);
+		out.flush();
+		releaseWritelock();
+	}
+
+	public void writeCloseByte() throws IOException {
+		appendWritelock();
+		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
+		out.writeByte(Protocol.CMD_UNREGISTER);
+		out.writeByte(Protocol.DACRY_SERVER_COMM_CLOSE);
+		out.flush();
+		releaseWritelock();
+	}
+
 	/**
 	 * TODO Change ClientHandling to User
 	 * 
@@ -72,6 +104,21 @@ public class Protocol {
 		releaseWritelock();
 	}
 
+	public OnlineList readOnlineList() throws IOException {
+		int lenght = in.readInt();
+		User[] onlineusers = new User[lenght];
+		for (int i = 0; i < lenght; i++) {
+			long id = in.readLong();
+			int lenghtName = in.readInt();
+			StringBuilder builder = new StringBuilder();
+			for (int j = 0; j < lenghtName; j++) {
+				builder.append(in.readChar());
+			}
+			onlineusers[i] = new User(builder.toString(), id);
+		}
+		return new OnlineList(onlineusers, null);
+	}
+
 	public void writeMessageToServer(Message message) throws IOException {
 		writeMessage(message, Protocol.CMD_SEND_MESSAGE);
 	}
@@ -84,7 +131,7 @@ public class Protocol {
 	private void writeMessage(Message message, byte key) throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
-		out.writeByte(Protocol.NOTIFY_CHAT_MESSAGE);
+		out.writeByte(key);
 		out.writeLong(message.getChatsessionid());
 		out.writeInt(message.getMsg().length);
 		for (int i = 0; i < message.getMsg().length; i++) {
@@ -95,22 +142,37 @@ public class Protocol {
 		releaseWritelock();
 	}
 
-	/**
-	 * TODO remove the ChatSession
-	 * 
-	 * @param offer
-	 * @param server
-	 * @throws IOException
-	 */
-	public void writeChatKeyOffer(ChatKeyOffer offer) throws IOException {
+	public void writeChatKeyOfferToServer(ChatKeyOffer offer)
+			throws IOException {
+		writeChatKeyOffer(offer, Protocol.CMD_SETUP_CHAT_2);
+	}
+
+	public void writeChatKeyOfferToClient(ChatKeyOffer offer)
+			throws IOException {
+		writeChatKeyOffer(offer, Protocol.NOTIFY_CHAT_SETTET_UP);
+	}
+
+	private void writeChatKeyOffer(ChatKeyOffer offer, byte keybyte)
+			throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
-		out.writeByte(Protocol.NOTIFY_CHAT_SETTET_UP);
+		out.writeByte(keybyte);
 		out.writeLong(offer.getChatsessionid());
 		out.writeInt(offer.getKey().toByteArray().length);
 		for (int i = 0; i < offer.getKey().toByteArray().length; i++) {
 			out.writeByte(offer.getKey().toByteArray()[i]);
 		}
+		out.writeByte(Protocol.DACRY_SERVER_COMM_CLOSE);
+		out.flush();
+		releaseWritelock();
+	}
+
+	public void writeNamerequest(Namerequest n) throws IOException {
+		appendWritelock();
+		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
+		out.writeByte(Protocol.CMD_SET_NAME);
+		out.writeByte(n.getName().length());
+		out.writeChars(n.getName());
 		out.writeByte(Protocol.DACRY_SERVER_COMM_CLOSE);
 		out.flush();
 		releaseWritelock();
@@ -164,6 +226,22 @@ public class Protocol {
 		out.writeByte(Protocol.DACRY_SERVER_COMM_CLOSE);
 		out.flush();
 		releaseWritelock();
+	}
+
+	public ChatInvite readChatInvite() throws IOException {
+		long sessionid = in.readLong();
+		int id_initiator = in.readInt();
+		int id_guest = in.readInt();
+		byte[] q = new byte[ChatSession.KEY_LENGHT];
+		for (int i = 0; i < q.length; i++) {
+			q[i] = in.readByte();
+		}
+		byte[] p = new byte[ChatSession.KEY_LENGHT];
+		for (int i = 0; i < p.length; i++) {
+			p[i] = in.readByte();
+		}
+		return new ChatInvite(new BigInteger(p), new BigInteger(q),
+				(int) sessionid, id_guest, id_initiator);
 	}
 
 	private void appendWritelock() {
