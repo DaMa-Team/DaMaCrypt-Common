@@ -128,6 +128,16 @@ public class Protocol {
 
 	}
 
+	public void writeChatInvite(Chatopen open) throws IOException {
+		appendWritelock();
+		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
+		out.writeByte(Protocol.CMD_SETUP_CHAT);
+		out.writeLong(open.getChatpartner());
+		out.writeByte(Protocol.DACRY_SERVER_COMM_CLOSE);
+		out.flush();
+		releaseWritelock();
+	}
+
 	private void writeMessage(Message message, byte key) throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
