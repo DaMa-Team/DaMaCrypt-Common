@@ -72,7 +72,16 @@ public class Protocol {
 		releaseWritelock();
 	}
 
-	public void writeMessage(Message message) throws IOException {
+	public void writeMessageToServer(Message message) throws IOException {
+		writeMessage(message, Protocol.CMD_SEND_MESSAGE);
+	}
+
+	public void writeMessageToClient(Message message) throws IOException {
+		writeMessage(message, Protocol.NOTIFY_CHAT_MESSAGE);
+
+	}
+
+	private void writeMessage(Message message, byte key) throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
 		out.writeByte(Protocol.NOTIFY_CHAT_MESSAGE);
