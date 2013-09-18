@@ -6,12 +6,7 @@ import java.util.Random;
 
 import Client.Protocol.ChatSessionUser;
 
-public class ChatSession implements Serializable {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 2042963137019063739L;
+public class ChatSession {
 
 	public static final int KEY_LENGHT = 32;
 
@@ -102,6 +97,7 @@ public class ChatSession implements Serializable {
 		else
 			return initiator;
 	}
+
 	public ChatSessionUser getPartner(long idyou) {
 		if (idyou == initiator.getUser().getClientId())
 			return guest;

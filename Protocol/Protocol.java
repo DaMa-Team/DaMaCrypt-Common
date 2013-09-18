@@ -15,6 +15,15 @@ import Client.Protocol.Types.OnlineList;
 import Client.UserHandling.ChatSession;
 import Client.UserHandling.User;
 
+/**
+ * Protocol class
+ * 
+ * @author Marcel Hollerbach
+ * 
+ *         This class manages the writing and reading of the different Messages
+ *         to the Stream. Each Function is specified to user from Server to
+ *         Client or from the Client to the Server
+ */
 public class Protocol {
 	public static final byte CMD_REGISTER = 0;
 	public static final byte CMD_UNREGISTER = 1;
@@ -43,6 +52,16 @@ public class Protocol {
 		this.out = out;
 	}
 
+	/**
+	 * This will write the ID to the Client. This function is only called once
+	 * at the beginning to tell the Client who he is.
+	 * 
+	 * Using this while runtime will cause an error because this transmission
+	 * has no keyword. So the ID will be used as key word.
+	 * 
+	 * @param id
+	 * @throws IOException
+	 */
 	public void writeID(int id) throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
@@ -52,6 +71,19 @@ public class Protocol {
 		releaseWritelock();
 	}
 
+	/**
+	 * This is the method to apply for an ID by the server.
+	 * 
+	 * This is the counter part to the method writeID(int id)
+	 * 
+	 * In difference to the rest of the methods this is a read/write
+	 * combination.
+	 * 
+	 * The method will wait until the server replied.
+	 * 
+	 * @return The ID which is yours as Client
+	 * @throws IOException
+	 */
 	public int applyForID() throws IOException {
 		// Get the ID
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
@@ -65,6 +97,12 @@ public class Protocol {
 		return id;
 	}
 
+	/**
+	 * This will apply for the current Onlinelist. If everything works the
+	 * server will answer with {@link Protocol.NOTIFY_NEW_ONLINE_LIST}
+	 * 
+	 * @throws IOException
+	 */
 	public void writeOnlineListApply() throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
@@ -74,6 +112,10 @@ public class Protocol {
 		releaseWritelock();
 	}
 
+	/**
+	 * This will unregister your Client. This means the Server will give your ID
+	 * to someone else
+	 */
 	public void writeCloseByte() throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
@@ -84,7 +126,15 @@ public class Protocol {
 	}
 
 	/**
-	 * TODO Change ClientHandling to User
+	 * This will write the ArrayList to the Client.<br>
+	 * | <br>
+	 * |+User<br>
+	 * |int ID<br>
+	 * |int usernamelenght<br>
+	 * |chat[] names<br>
+	 * |+User<br>
+	 * |...<br>
+	 * The counter part of this function is {@link Protocol.readOnlineList()}
 	 * 
 	 * @param hand
 	 * @throws IOException
@@ -104,6 +154,12 @@ public class Protocol {
 		releaseWritelock();
 	}
 
+	/**
+	 * This will read in the OnlineList sent by the server.
+	 * 
+	 * @return An Object with an Array of Users inside
+	 * @throws IOException
+	 */
 	public OnlineList readOnlineList() throws IOException {
 		int lenght = in.readInt();
 		User[] onlineusers = new User[lenght];
@@ -116,28 +172,34 @@ public class Protocol {
 			}
 			onlineusers[i] = new User(builder.toString(), id);
 		}
-		return new OnlineList(onlineusers, null);
+		return new OnlineList(onlineusers);
 	}
 
+	/**
+	 * This will write a Message to the Server
+	 * 
+	 * @param message
+	 * @throws IOException
+	 */
 	public void writeMessageToServer(Message message) throws IOException {
 		writeMessage(message, Protocol.CMD_SEND_MESSAGE);
 	}
 
+	/**
+	 * This will write a Message to the Client
+	 * 
+	 * @param message
+	 * @throws IOException
+	 */
 	public void writeMessageToClient(Message message) throws IOException {
 		writeMessage(message, Protocol.NOTIFY_CHAT_MESSAGE);
 
 	}
 
-	public void writeChatInvite(Chatopen open) throws IOException {
-		appendWritelock();
-		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
-		out.writeByte(Protocol.CMD_SETUP_CHAT);
-		out.writeLong(open.getChatpartner());
-		out.writeByte(Protocol.DACRY_SERVER_COMM_CLOSE);
-		out.flush();
-		releaseWritelock();
-	}
-
+	/**
+	 * private abstraction method to make the code of the upper two methods
+	 * easier
+	 */
 	private void writeMessage(Message message, byte key) throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
@@ -152,11 +214,40 @@ public class Protocol {
 		releaseWritelock();
 	}
 
+	/**
+	 * This will write an ChatInvite from The Client to the Server. The Server
+	 * will replay with an {@link Protocol.NOTIFY_CHAT_INV}
+	 * 
+	 * @param open
+	 * @throws IOException
+	 */
+	public void writeChatInvite(Chatopen open) throws IOException {
+		appendWritelock();
+		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
+		out.writeByte(Protocol.CMD_SETUP_CHAT);
+		out.writeLong(open.getChatpartner());
+		out.writeByte(Protocol.DACRY_SERVER_COMM_CLOSE);
+		out.flush();
+		releaseWritelock();
+	}
+
+	/**
+	 * This will write an key offer to the Server.
+	 * 
+	 * @param offer
+	 * @throws IOException
+	 */
 	public void writeChatKeyOfferToServer(ChatKeyOffer offer)
 			throws IOException {
 		writeChatKeyOffer(offer, Protocol.CMD_SETUP_CHAT_2);
 	}
 
+	/**
+	 * This will write an key offer to the Client.
+	 * 
+	 * @param offer
+	 * @throws IOException
+	 */
 	public void writeChatKeyOfferToClient(ChatKeyOffer offer)
 			throws IOException {
 		writeChatKeyOffer(offer, Protocol.NOTIFY_CHAT_SETTET_UP);
@@ -177,6 +268,14 @@ public class Protocol {
 		releaseWritelock();
 	}
 
+	/**
+	 * This will write a Namerequest to the server. If the name is already taken
+	 * the Server will write a {@link Protocol.NOTIFY_NAME_ALLREADY_IN_USE}
+	 * 
+	 * @param n
+	 *            The Namerequest to write
+	 * @throws IOException
+	 */
 	public void writeNamerequest(Namerequest n) throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
@@ -188,6 +287,12 @@ public class Protocol {
 		releaseWritelock();
 	}
 
+	/**
+	 * This will read in a Namerequest on the Server.
+	 * 
+	 * @return The Namerequest
+	 * @throws IOException
+	 */
 	public Namerequest readNamerequest() throws IOException {
 		int lenght = in.readByte();
 		StringBuilder builder = new StringBuilder(lenght);
@@ -198,6 +303,12 @@ public class Protocol {
 		return new Namerequest(builder.toString());
 	}
 
+	/**
+	 * This will read a KeyOffer
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
 	public ChatKeyOffer readKeyOffer() throws IOException {
 		long id = in.readLong();
 		byte[] cry = new byte[in.readInt()];
@@ -207,6 +318,12 @@ public class Protocol {
 		return new ChatKeyOffer((int) id, new BigInteger(cry));
 	}
 
+	/**
+	 * This will read a Message from the stream
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
 	public Message readMessage() throws IOException {
 		long sessionID = in.readLong();
 		byte[] content = new byte[in.readInt()];
@@ -216,17 +333,29 @@ public class Protocol {
 		return new Message((int) sessionID, content);
 	}
 
+	/**
+	 * This will read a CMD_CHAT_SETUP on the Server
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
 	public Chatopen readChatopen() throws IOException {
 		return new Chatopen((int) in.readLong());
 	}
 
+	/**
+	 * This will write an ChatInvite from the Server to the Client.
+	 * 
+	 * @param inv
+	 * @throws IOException
+	 */
 	public void writeChatInvite(ChatInvite inv) throws IOException {
 		appendWritelock();
 		out.writeByte(Protocol.DACRY_SERVER_COMM_OPEN);
 		out.writeByte(Protocol.NOTIFY_CHAT_INV);
 		out.writeLong(inv.getChatsessionid());
-		out.writeLong(inv.getInitiatorid());
-		out.writeLong(inv.getPartnerid());
+		out.writeInt(inv.getInitiatorid());
+		out.writeInt(inv.getPartnerid());
 		for (byte b : inv.getQ().toByteArray()) {
 			out.writeByte(b);
 		}
@@ -238,6 +367,13 @@ public class Protocol {
 		releaseWritelock();
 	}
 
+	/**
+	 * This will read an ChatInvite on the Client. Counterpart of
+	 * writeChatInvite(ChatInvite inv)
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
 	public ChatInvite readChatInvite() throws IOException {
 		long sessionid = in.readLong();
 		int id_initiator = in.readInt();
