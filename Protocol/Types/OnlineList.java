@@ -1,7 +1,5 @@
 package Client.Protocol.Types;
 
-import java.util.ArrayList;
-
 import Client.UserHandling.User;
 
 public class OnlineList {
